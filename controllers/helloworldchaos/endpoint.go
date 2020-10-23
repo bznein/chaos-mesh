@@ -36,7 +36,7 @@ func (e *endpoint) Apply(ctx context.Context, req ctrl.Request, chaos v1alpha1.I
 	g := errgroup.Group{}
 	for _, pv := range pvs {
 		g.Go(func() error {
-			e.Log.Info("Matched pv", pv.Name)
+			e.Log.Info("Matched pv", "name", pv.Name)
 			return nil
 		})
 	}
