@@ -29,5 +29,5 @@ echo "Applying clusterrole (temporary fix)"
 kubectl apply -f clusterrole.yaml
 
 #TODO this must wait for the dashbaord to be running
-echo "Port forward for chaos-dashboard"
-kubectl port-forward -n chaos-testing svc/chaos-dashboard 2333:2333 &
+#echo "Port forward for chaos-dashboard"
+#kubectl port-forward -n chaos-testing svc/chaos-dashboard 2333:2333 &
