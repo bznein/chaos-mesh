@@ -233,11 +233,16 @@ image-chaos-kernel:
 	docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/chaos-kernel:${IMAGE_TAG} ${DOCKER_BUILD_ARGS} --build-arg MAKE_JOBS=${MAKE_JOBS} --build-arg MIRROR=${UBUNTU_MIRROR} images/chaos-kernel
 
 docker-push:
-	docker push "${DOCKER_REGISTRY_PREFIX}pingcap/chaos-mesh:${IMAGE_TAG}"
-	docker push "${DOCKER_REGISTRY_PREFIX}pingcap/chaos-dashboard:${IMAGE_TAG}"
-	docker push "${DOCKER_REGISTRY_PREFIX}pingcap/chaos-fs:${IMAGE_TAG}"
-	docker push "${DOCKER_REGISTRY_PREFIX}pingcap/chaos-daemon:${IMAGE_TAG}"
-	docker push "${DOCKER_REGISTRY_PREFIX}pingcap/chaos-scripts:${IMAGE_TAG}"
+	docker tag "${DOCKER_REGISTRY_PREFIX}pingcap/chaos-mesh:${IMAGE_TAG}" "quay.io/nikolas_de_giorgis/chaos-mesh:${IMAGE_TAG}"
+	docker push "quay.io/nikolas_de_giorgis/chaos-mesh:${IMAGE_TAG}"
+	docker tag "${DOCKER_REGISTRY_PREFIX}pingcap/chaos-dashboard:${IMAGE_TAG}" "quay.io/nikolas_de_giorgis/chaos-dashboard:${IMAGE_TAG}"
+	docker push "quay.io/nikolas_de_giorgis/chaos-dashboard:${IMAGE_TAG}"
+	docker tag "${DOCKER_REGISTRY_PREFIX}pingcap/chaos-fs:${IMAGE_TAG}" "quay.io/nikolas_de_giorgis/chaos-fs:${IMAGE_TAG}"
+	docker push "quay.io/nikolas_de_giorgis/chaos-fs:${IMAGE_TAG}"
+	docker tag "${DOCKER_REGISTRY_PREFIX}pingcap/chaos-daemon:${IMAGE_TAG}" "quay.io/nikolas_de_giorgis/chaos-daemon:${IMAGE_TAG}"
+	docker push "quay.io/nikolas_de_giorgis/chaos-daemon:${IMAGE_TAG}"
+	docker tag "${DOCKER_REGISTRY_PREFIX}pingcap/chaos-scripts:${IMAGE_TAG}" "quay.io/nikolas_de_giorgis/chaos-scripts:${IMAGE_TAG}"
+	docker push "quay.io/nikolas_de_giorgis/chaos-scripts:${IMAGE_TAG}"
 
 docker-push-chaos-kernel:
 	docker push "${DOCKER_REGISTRY_PREFIX}pingcap/chaos-kernel:${IMAGE_TAG}"
