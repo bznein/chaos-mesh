@@ -30,7 +30,7 @@ controllerManager:
   replicaCount: 1
 
   image: quay.io/nikolas_de_giorgis/chaos-mesh:latest
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
 
   nameOverride: ""
   fullnameOverride: ""
@@ -67,7 +67,7 @@ controllerManager:
 
 chaosDaemon:
   image: quay.io/nikolas_de_giorgis/chaos-daemon:latest
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
   grpcPort: 31767
   httpPort: 31766
   env: {}
@@ -110,7 +110,7 @@ dashboard:
 
 
   image: quay.io/nikolas_de_giorgis/chaos-dashboard:latest
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
 
   nodeSelector: {}
 
@@ -215,7 +215,7 @@ prometheus:
   serviceAccount: prometheus
 
   image: prom/prometheus:v2.18.1
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
 
   nodeSelector: {}
 
@@ -273,7 +273,7 @@ bpfki:
   create: false
 
   image: quay.io/nikolas_de_giorgis/chaos-kernel:latest
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
   grpcPort: 50051
   resources: {}
     # We usually recommend not to specify default resources and to leave this as a conscious

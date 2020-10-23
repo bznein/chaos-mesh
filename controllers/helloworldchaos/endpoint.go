@@ -17,7 +17,7 @@ type endpoint struct {
 }
 
 func (e *endpoint) Apply(ctx context.Context, req ctrl.Request, chaos v1alpha1.InnerObject) error {
-	e.Log.Info("Hello World!")
+	e.Log.Info("Hellooooo World!")
 	return nil
 }
 
