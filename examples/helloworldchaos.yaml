@@ -3,4 +3,6 @@ kind: HelloWorldChaos
 metadata:
   name: hello-world
   namespace: chaos-testing
-spec: {}
+spec:
+ scheduler:
+    cron: "@every 5s"
