@@ -51,6 +51,65 @@ spec:
               required:
               - cron
               type: object
+            selector:
+              description: Selector is used to select pods that are used to inject
+                chaos action.
+              properties:
+                annotationSelectors:
+                  additionalProperties:
+                    type: string
+                  description: Map of string keys and values that can be used to select
+                    objects. A selector based on annotations.
+                  type: object
+                fieldSelectors:
+                  additionalProperties:
+                    type: string
+                  description: Map of string keys and values that can be used to select
+                    objects. A selector based on fields.
+                  type: object
+                labelSelectors:
+                  additionalProperties:
+                    type: string
+                  description: Map of string keys and values that can be used to select
+                    objects. A selector based on labels.
+                  type: object
+                namespaces:
+                  description: Namespaces is a set of namespace to which objects belong.
+                  items:
+                    type: string
+                  type: array
+                nodeSelectors:
+                  additionalProperties:
+                    type: string
+                  description: Map of string keys and values that can be used to select
+                    nodes. Selector which must match a node's labels, and objects
+                    must belong to these selected nodes.
+                  type: object
+                nodes:
+                  description: Nodes is a set of node name and objects must belong
+                    to these nodes.
+                  items:
+                    type: string
+                  type: array
+                podPhaseSelectors:
+                  description: 'PodPhaseSelectors is a set of condition of a pod at
+                    the current time. supported value: Pending / Running / Succeeded
+                    / Failed / Unknown'
+                  items:
+                    type: string
+                  type: array
+                pods:
+                  additionalProperties:
+                    items:
+                      type: string
+                    type: array
+                  description: Pods is a map of string keys and a set values that
+                    used to select pods. The key defines the namespace which pods
+                    belong, and the each values is a set of pod names.
+                  type: object
+              type: object
+          required:
+          - selector
           type: object
         status:
           description: HelloWorldChaosStatus represents the status of a HelloWorldChaos

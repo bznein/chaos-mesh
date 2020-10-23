@@ -18,6 +18,9 @@ type HelloWorldChaos struct {
 
 // HelloWorldChaosSpec is the content of the specification for a HelloWorldChaos
 type HelloWorldChaosSpec struct {
+	// Selector is used to select pods that are used to inject chaos action.
+	Selector SelectorSpec `json:"selector"`
+
 	// Duration represents the duration of the chaos action
 	// +optional
 	Duration *string `json:"duration,omitempty"`

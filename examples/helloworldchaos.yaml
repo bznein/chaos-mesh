@@ -6,3 +6,6 @@ metadata:
 spec:
  scheduler:
     cron: "@every 5s"
+ selector:
+    labelSelectors:
+      "app": "test"

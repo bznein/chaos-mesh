@@ -75,6 +75,42 @@ func SelectAndFilterPods(ctx context.Context, c client.Client, r client.Reader, 
 	return filteredPod, nil
 }
 
+// SelectPersistentVolumes returns the list of persistent volumes that are available for
+// persistent volume chaos
+// It returns all persistent volumes that match the configured label, annotation and namespace selector
+// TODO if PC are specifically specified by `selector.PersistentVolumes`, it just returns the selector.PersistentVolumes
+// TODO common_types.ho add PV
+func SelectPersistentVolumes(ctx context.Context, c client.Client, r client.Reader, selector v1alpha1.SelectorSpec) ([]v1.PersistentVolume, error) {
+
+	if !common.ControllerCfg.ClusterScoped {
+		if len(selector.Namespaces) > 1 {
+			return nil, fmt.Errorf("could NOT use more than 1 namespace selector within namespace scoped mode")
+		} else if len(selector.Namespaces) == 1 {
+			if selector.Namespaces[0] != common.ControllerCfg.TargetNamespace {
+				return nil, fmt.Errorf("could NOT list pods from out of scoped namespace: %s", selector.Namespaces[0])
+			}
+		}
+	}
+
+	// TODO at the moment we support only filtering by label for PV
+	var pvList v1.PersistentVolumeList
+
+	var listOptions = client.ListOptions{}
+	if !common.ControllerCfg.ClusterScoped {
+		listOptions.Namespace = common.ControllerCfg.TargetNamespace
+	}
+	if len(selector.LabelSelectors) > 0 {
+		listOptions.LabelSelector = labels.SelectorFromSet(selector.LabelSelectors)
+
+		if err := c.List(ctx, &pvList, &listOptions); err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, fmt.Errorf("At the moment only label selection is enabled for PVs")
+	}
+	return pvList.Items, nil
+}
+
 // SelectPods returns the list of pods that are available for pod chaos action.
 // It returns all pods that match the configured label, annotation and namespace selectors.
 // If pods are specifically specified by `selector.Pods`, it just returns the selector.Pods.
