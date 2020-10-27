@@ -1,0 +1,12 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PersistentVolumeChaos
+metadata:
+  name: hello-world
+  namespace: chaos-testing
+spec:
+ scheduler:
+    cron: "@every 10m"
+ selector:
+    labelSelectors:
+      "app": "test"
+ mode: one

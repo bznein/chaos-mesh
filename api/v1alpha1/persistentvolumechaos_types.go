@@ -7,17 +7,17 @@ import (
 // +kubebuilder:object:root=true
 // +chaos-mesh:base
 
-// HelloWorldChaos is the Schema for the helloworldchaos API
-type HelloWorldChaos struct {
+// PersistentVolumeChaos is the Schema for the persistentvolumechaos API
+type PersistentVolumeChaos struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   HelloWorldChaosSpec   `json:"spec"`
-	Status HelloWorldChaosStatus `json:"status,omitempty"`
+	Spec   PersistentVolumeChaosSpec   `json:"spec"`
+	Status PersistentVolumeChaosStatus `json:"status,omitempty"`
 }
 
-// HelloWorldChaosSpec is the content of the specification for a HelloWorldChaos
-type HelloWorldChaosSpec struct {
+// PersistentVolumeChaosSpec is the content of the specification for a PersistentVolumeChaos
+type PersistentVolumeChaosSpec struct {
 	// Selector is used to select pods that are used to inject chaos action.
 	Selector SelectorSpec `json:"selector"`
 
@@ -42,19 +42,19 @@ type HelloWorldChaosSpec struct {
 	Scheduler *SchedulerSpec `json:"scheduler,omitempty"`
 }
 
-// HelloWorldChaosStatus represents the status of a HelloWorldChaos
-type HelloWorldChaosStatus struct {
+// PersistentVolumeChaosStatus represents the status of a PersistentVolumeChaos
+type PersistentVolumeChaosStatus struct {
 	ChaosStatus `json:",inline"`
 }
 
-func (in *HelloWorldChaosSpec) GetSelector() SelectorSpec {
+func (in *PersistentVolumeChaosSpec) GetSelector() SelectorSpec {
 	return in.Selector
 }
 
-func (in *HelloWorldChaosSpec) GetMode() PodMode {
+func (in *PersistentVolumeChaosSpec) GetMode() PodMode {
 	return in.Mode
 }
 
-func (in *HelloWorldChaosSpec) GetValue() string {
+func (in *PersistentVolumeChaosSpec) GetValue() string {
 	return in.Value
 }

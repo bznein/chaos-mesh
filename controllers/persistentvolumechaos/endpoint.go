@@ -1,4 +1,4 @@
-package helloworldchaos
+package persistentvolumechaos
 
 import (
 	"context"
@@ -22,13 +22,13 @@ type endpoint struct {
 }
 
 func (e *endpoint) Apply(ctx context.Context, req ctrl.Request, chaos v1alpha1.InnerObject) error {
-	hellochaos, ok := chaos.(*v1alpha1.HelloWorldChaos)
+	pvchaos, ok := chaos.(*v1alpha1.PersistentVolumeChaos)
 	if !ok {
-		err := errors.New("chaos is not HelloWorldChaos")
-		e.Log.Error(err, "chaos is not HelloWorldChaos", "chaos", chaos)
+		err := errors.New("chaos is not PersistentVolumeChaos")
+		e.Log.Error(err, "chaos is not PersistentVolumeChaos", "chaos", chaos)
 		return err
 	}
-	pvs, err := utils.SelectAndFilterPV(ctx, e.Client, e.Reader, &hellochaos.Spec)
+	pvs, err := utils.SelectAndFilterPV(ctx, e.Client, e.Reader, &pvchaos.Spec)
 	if err != nil {
 		e.Log.Error(err, "fail to select pv")
 		return err
@@ -52,11 +52,11 @@ func (e *endpoint) Recover(ctx context.Context, req ctrl.Request, chaos v1alpha1
 }
 
 func (e *endpoint) Object() v1alpha1.InnerObject {
-	return &v1alpha1.HelloWorldChaos{}
+	return &v1alpha1.PersistentVolumeChaos{}
 }
 
 func init() {
-	router.Register("helloworldchaos", &v1alpha1.HelloWorldChaos{}, func(obj runtime.Object) bool {
+	router.Register("persistentvolumechaos", &v1alpha1.PersistentVolumeChaos{}, func(obj runtime.Object) bool {
 		return true
 	}, func(ctx ctx.Context) end.Endpoint {
 		return &endpoint{

@@ -34,12 +34,12 @@ import (
 	"github.com/chaos-mesh/chaos-mesh/pkg/webhook/config/watcher"
 
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/dnschaos"
-	_ "github.com/chaos-mesh/chaos-mesh/controllers/helloworldchaos"
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/httpchaos"
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/iochaos"
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/kernelchaos"
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/networkchaos/partition"
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/networkchaos/trafficcontrol"
+	_ "github.com/chaos-mesh/chaos-mesh/controllers/persistentvolumechaos"
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/podchaos/containerkill"
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/podchaos/podfailure"
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/podchaos/podkill"
