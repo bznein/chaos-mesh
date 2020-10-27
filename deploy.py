@@ -18,6 +18,7 @@ def install_release():
     ui = os.environ.get("UI", "0")
     if ui == "1":
         args.append(["--set", "dashboard.create=true"])
+    subprocess.run(args)
 
 # TODO apply/replace/ etc configurable?
 def kube_apply(filename: str):

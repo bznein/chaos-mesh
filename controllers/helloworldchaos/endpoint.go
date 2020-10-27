@@ -39,7 +39,7 @@ func (e *endpoint) Apply(ctx context.Context, req ctrl.Request, chaos v1alpha1.I
 		pv := &pvs[index]
 		g.Go(func() error {
 			e.Log.Info("Deleting pv", "name", pv.Name)
-			e.Delete(ctx, &pv, &client.DeleteOptions{})
+			e.Delete(ctx, pv, &client.DeleteOptions{})
 			return nil
 		})
 	}

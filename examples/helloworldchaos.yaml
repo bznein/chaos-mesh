@@ -5,9 +5,8 @@ metadata:
   namespace: chaos-testing
 spec:
  scheduler:
-    cron: "@every 5s"
+    cron: "@every 10m"
  selector:
     labelSelectors:
       "app": "test"
- mode: fixed-percent
- value: "100"
+ mode: one
