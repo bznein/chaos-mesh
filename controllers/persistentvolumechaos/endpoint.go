@@ -2,9 +2,11 @@ package persistentvolumechaos
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	types "k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -21,6 +23,11 @@ type endpoint struct {
 	ctx.Context
 }
 
+type patch struct {
+	Op   string `json:"op"`
+	Path string `json:"path"`
+}
+
 func (e *endpoint) Apply(ctx context.Context, req ctrl.Request, chaos v1alpha1.InnerObject) error {
 	pvchaos, ok := chaos.(*v1alpha1.PersistentVolumeChaos)
 	if !ok {
@@ -35,11 +42,25 @@ func (e *endpoint) Apply(ctx context.Context, req ctrl.Request, chaos v1alpha1.I
 	}
 	g := errgroup.Group{}
 
+	payload := []patch{{
+		Op:   "remove",
+		Path: "/metadata/finalizers",
+	}}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		e.Log.Error(err, "failure creating patch")
+		return err
+	}
+
 	for index := range pvs {
 		pv := &pvs[index]
 		g.Go(func() error {
 			e.Log.Info("Deleting pv", "name", pv.Name)
 			e.Delete(ctx, pv, &client.DeleteOptions{})
+			err := e.Client.Patch(context.TODO(), pv, client.ConstantPatch(types.JSONPatchType, payloadBytes))
+			if err != nil {
+				e.Log.Error(err, "Failed to patch - Finalizers will run")
+			}
 			return nil
 		})
 	}
