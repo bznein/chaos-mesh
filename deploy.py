@@ -14,7 +14,7 @@ def uninstall_release():
 
 def install_release():
     print("Installing release:")
-    args=["helm", "install", "chaos-mesh", "helm/chaos", "--namespace=chaos-testing", "--set", "chaosDaemon.runtime=containerd", "--set", "chaosDaemon.socketPath=/run/containerd/containerd.sock"]
+    args=["helm", "install", "chaos-mesh", "helm/chaos-mesh", "--namespace=chaos-testing", "--set", "chaosDaemon.runtime=containerd", "--set", "chaosDaemon.socketPath=/run/containerd/containerd.sock"]
     ui = os.environ.get("UI", "0")
     if ui == "1":
         args.append(["--set", "dashboard.create=true"])
