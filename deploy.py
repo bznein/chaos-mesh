@@ -97,6 +97,7 @@ def main() -> int:
     make()
     make("docker-push")
 
+    install_release()
     kube_apply("manifests/")
 
     kube_apply("clusterrole.yaml")
