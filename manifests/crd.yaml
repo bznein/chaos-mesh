@@ -1571,6 +1571,10 @@ spec:
               - fixed-percent
               - random-max-percent
               type: string
+            remove_finalizers:
+              description: Remove finalizers tell the chaos whether to patch the PV
+                deleted and remove its finalizers
+              type: boolean
             scheduler:
               description: Scheduler defines some schedule rules to control the running
                 time of the chaos experiment about time.

@@ -56,10 +56,16 @@ func (e *endpoint) Apply(ctx context.Context, req ctrl.Request, chaos v1alpha1.I
 		pv := &pvs[index]
 		g.Go(func() error {
 			e.Log.Info("Deleting pv", "name", pv.Name)
-			e.Delete(ctx, pv, &client.DeleteOptions{})
-			err := e.Client.Patch(context.TODO(), pv, client.ConstantPatch(types.JSONPatchType, payloadBytes))
+			err := e.Delete(ctx, pv, &client.DeleteOptions{})
 			if err != nil {
-				e.Log.Error(err, "Failed to patch - Finalizers will run")
+				e.Log.Error(err, "Can't delete PV!")
+			}
+			if pvchaos.Spec.RemoveFinalizers {
+				e.Log.Info("Removing finalizers")
+				err := e.Client.Patch(context.TODO(), pv, client.ConstantPatch(types.JSONPatchType, payloadBytes))
+				if err != nil {
+					e.Log.Error(err, "Failed to patch - Finalizers will run")
+				}
 			}
 			return nil
 		})

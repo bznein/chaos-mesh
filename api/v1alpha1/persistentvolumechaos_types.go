@@ -40,6 +40,10 @@ type PersistentVolumeChaosSpec struct {
 	// Scheduler defines some schedule rules to control the running time of the chaos experiment about time.
 	// +optional
 	Scheduler *SchedulerSpec `json:"scheduler,omitempty"`
+
+	// Remove finalizers tell the chaos whether to patch the PV deleted and remove its finalizers
+	// +optional
+	RemoveFinalizers bool `json:"remove_finalizers"`
 }
 
 // PersistentVolumeChaosStatus represents the status of a PersistentVolumeChaos
