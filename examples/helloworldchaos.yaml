@@ -9,3 +9,5 @@ spec:
  selector:
     labelSelectors:
       "app": "test"
+ mode: fixed-percent
+ value: "100"

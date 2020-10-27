@@ -269,6 +269,16 @@ spec:
             duration:
               description: Duration represents the duration of the chaos action
               type: string
+            mode:
+              description: 'Mode defines the mode to run chaos action. Supported mode:
+                one / all / fixed / fixed-percent / random-max-percent'
+              enum:
+              - one
+              - all
+              - fixed
+              - fixed-percent
+              - random-max-percent
+              type: string
             scheduler:
               description: Scheduler defines some schedule rules to control the running
                 time of the chaos experiment about time.
@@ -339,7 +349,16 @@ spec:
                     belong, and the each values is a set of pod names.
                   type: object
               type: object
+            value:
+              description: Value is required when the mode is set to `fixed` / `fixed-percent`
+                / `random-max-percent`. If `fixed`, provide an integer value representign
+                the number of volumes on which to act If `fixed-percent`, provide
+                a number from 0-100 to specify the percent of volumes on which to
+                act If `random-max-percent`,  provide a number from 0-100 to specify
+                the max percent of volumes on which to act
+              type: string
           required:
+          - mode
           - selector
           type: object
         status:

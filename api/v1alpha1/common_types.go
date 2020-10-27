@@ -101,6 +101,23 @@ const (
 	RandomMaxPercentPodMode PodMode = "random-max-percent"
 )
 
+type VolumeMode string
+
+const (
+	// OneVolumeMode represents that the system will do the chaos action on one volume selected randomly.
+	OneVolumeMode VolumeMode = "one"
+	// AllVolumeMode represents that the system will do the chaos action on all volumes
+	// regardless of status (not ready or not running volumes includes).
+	// Use this label carefully.
+	AllVolumeMode VolumeMode = "all"
+	// FixedVolumeMode represents that the system will do the chaos action on a specific number of running volumes.
+	FixedVolumeMode VolumeMode = "fixed"
+	// FixedPercentVolumeMode to specify a fixed % that can be inject chaos action.
+	FixedPercentVolumeMode VolumeMode = "fixed-percent"
+	// RandomMaxPercentVolumeMode to specify a maximum % that can be inject chaos action.
+	RandomMaxPercentVolumeMode VolumeMode = "random-max-percent"
+)
+
 // ChaosPhase is the current status of chaos task.
 type ChaosPhase string
 

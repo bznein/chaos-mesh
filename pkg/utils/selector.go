@@ -44,6 +44,37 @@ type SelectSpec interface {
 	GetValue() string
 }
 
+// SelectAndFilterPV returns the list of PersistentVolumes filtered by Selector and Mode
+func SelectAndFilterPV(ctx context.Context, c client.Client, r client.Reader, spec SelectSpec) ([]v1.PersistentVolume, error) {
+	if volumes := mock.On("MockSelectAndFilterPV"); volumes != nil {
+		return volumes.(func() []v1.PersistentVolume)(), nil
+	}
+	if err := mock.On("MockSelectedAndFilterVolumesError"); err != nil {
+		return nil, err.(error)
+	}
+
+	selector := spec.GetSelector()
+	mode := spec.GetMode()
+	value := spec.GetValue()
+
+	volumes, err := SelectPersistentVolumes(ctx, c, r, selector)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(volumes) == 0 {
+		err = errors.New("no volume is selected")
+		return nil, err
+	}
+
+	filteredVolumes, err := filterVolumesByMode(volumes, v1alpha1.VolumeMode(mode), value)
+	if err != nil {
+		return nil, err
+	}
+
+	return filteredVolumes, nil
+}
+
 // SelectAndFilterPods returns the list of pods that filtered by selector and PodMode
 func SelectAndFilterPods(ctx context.Context, c client.Client, r client.Reader, spec SelectSpec) ([]v1.Pod, error) {
 	if pods := mock.On("MockSelectAndFilterPods"); pods != nil {
@@ -67,7 +98,7 @@ func SelectAndFilterPods(ctx context.Context, c client.Client, r client.Reader, 
 		return nil, err
 	}
 
-	filteredPod, err := filterPodsByMode(pods, mode, value)
+	filteredPod, err := filterPodsByMode(pods, v1alpha1.PodMode(mode), value)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +110,6 @@ func SelectAndFilterPods(ctx context.Context, c client.Client, r client.Reader, 
 // persistent volume chaos
 // It returns all persistent volumes that match the configured label, annotation and namespace selector
 // TODO if PC are specifically specified by `selector.PersistentVolumes`, it just returns the selector.PersistentVolumes
-// TODO common_types.ho add PV
 func SelectPersistentVolumes(ctx context.Context, c client.Client, r client.Reader, selector v1alpha1.SelectorSpec) ([]v1.PersistentVolume, error) {
 
 	if !common.ControllerCfg.ClusterScoped {
@@ -401,6 +431,75 @@ func filterPodsByMode(pods []v1.Pod, mode v1alpha1.PodMode, value string) ([]v1.
 	}
 }
 
+// filterPodsByMode filters pods by mode from pod list
+func filterVolumesByMode(pvs []v1.PersistentVolume, mode v1alpha1.VolumeMode, value string) ([]v1.PersistentVolume, error) {
+	if len(pvs) == 0 {
+		return nil, errors.New("cannot generate persistent volumes from empty list")
+	}
+
+	switch mode {
+	case v1alpha1.OneVolumeMode:
+		index := rand.Intn(len(pvs))
+		pv := pvs[index]
+
+		return []v1.PersistentVolume{pv}, nil
+	case v1alpha1.AllVolumeMode:
+		return pvs, nil
+	case v1alpha1.FixedVolumeMode:
+		num, err := strconv.Atoi(value)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(pvs) < num {
+			num = len(pvs)
+		}
+
+		if num <= 0 {
+			return nil, errors.New("cannot select any persistent volume as value below or equal 0")
+		}
+
+		return getFixedSubListFromPvList(pvs, num), nil
+	case v1alpha1.FixedPercentVolumeMode:
+		percentage, err := strconv.Atoi(value)
+		if err != nil {
+			return nil, err
+		}
+
+		if percentage == 0 {
+			return nil, errors.New("cannot select any volume as value below or equal 0")
+		}
+
+		if percentage < 0 || percentage > 100 {
+			return nil, fmt.Errorf("fixed percentage value of %d is invalid, Must be (0,100]", percentage)
+		}
+
+		num := int(math.Floor(float64(len(pvs)) * float64(percentage) / 100))
+
+		return getFixedSubListFromPvList(pvs, num), nil
+	case v1alpha1.RandomMaxPercentVolumeMode:
+		maxPercentage, err := strconv.Atoi(value)
+		if err != nil {
+			return nil, err
+		}
+
+		if maxPercentage == 0 {
+			return nil, errors.New("cannot select any volume as value below or equal 0")
+		}
+
+		if maxPercentage < 0 || maxPercentage > 100 {
+			return nil, fmt.Errorf("fixed percentage value of %d is invalid, Must be [0-100]", maxPercentage)
+		}
+
+		percentage := rand.Intn(maxPercentage + 1) // + 1 because Intn works with half open interval [0,n) and we want [0,n]
+		num := int(math.Floor(float64(len(pvs)) * float64(percentage) / 100))
+
+		return getFixedSubListFromPvList(pvs, num), nil
+	default:
+		return nil, fmt.Errorf("mode %s not supported", mode)
+	}
+}
+
 // filterByAnnotations filters a list of pods by a given annotation selector.
 func filterByAnnotations(pods []v1.Pod, annotations labels.Selector) []v1.Pod {
 	// empty filter returns original list
@@ -589,6 +688,19 @@ func getFixedSubListFromPodList(pods []v1.Pod, num int) []v1.Pod {
 	}
 
 	return filteredPods
+}
+
+func getFixedSubListFromPvList(pvs []v1.PersistentVolume, num int) []v1.PersistentVolume {
+	indexes := RandomFixedIndexes(0, uint(len(pvs)), uint(num))
+
+	var filteredPvs []v1.PersistentVolume
+
+	for _, index := range indexes {
+		index := index
+		filteredPvs = append(filteredPvs, pvs[index])
+	}
+
+	return filteredPvs
 }
 
 // RandomFixedIndexes returns the `count` random indexes between `start` and `end`.

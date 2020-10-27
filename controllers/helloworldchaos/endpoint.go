@@ -27,16 +27,18 @@ func (e *endpoint) Apply(ctx context.Context, req ctrl.Request, chaos v1alpha1.I
 		e.Log.Error(err, "chaos is not HelloWorldChaos", "chaos", chaos)
 		return err
 	}
-	// TODO implement GetSelector instead of direct call
-	pvs, err := utils.SelectPersistentVolumes(ctx, e.Client, e.Reader, hellochaos.Spec.Selector)
+	pvs, err := utils.SelectAndFilterPV(ctx, e.Client, e.Reader, &hellochaos.Spec)
 	if err != nil {
 		e.Log.Error(err, "fail to select pv")
 		return err
 	}
 	g := errgroup.Group{}
-	for _, pv := range pvs {
+
+	for index := range pvs {
+		pv := &pvs[index]
 		g.Go(func() error {
-			e.Log.Info("Matched pv", "name", pv.Name)
+			e.Log.Info("Deleting pv", "name", pv.Name)
+			e.Delete(ctx, &pv, &client.DeleteOptions{})
 			return nil
 		})
 	}

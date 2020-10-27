@@ -13,7 +13,7 @@ echo "Running make yaml"
 make yaml > /dev/null
 
 echo "Running make (this may take a long time)"
-UI=1 make > /dev/null
+UI=0 make > /dev/null
 
 echo "Running make docker-push"
 make docker-push > /dev/null

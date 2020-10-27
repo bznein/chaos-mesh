@@ -8,7 +8,7 @@ rules:
   - nodes
   - persistentvolumes
   - namespaces
-  verbs: ["list", "watch"]
+  verbs: ["list", "watch", "delete"]
 - apiGroups: ["storage.k8s.io"]
   resources:
   - storageclasses
