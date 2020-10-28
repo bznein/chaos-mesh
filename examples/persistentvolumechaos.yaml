@@ -7,6 +7,6 @@ spec:
  scheduler:
     cron: "@every 10m"
  selector:
-    labelSelectors:
-      "app": "test"
+    persistent_volumes:
+    - pvc-2030f5e3-6dd0-405e-b1e7-15c3b726ae31
  mode: one

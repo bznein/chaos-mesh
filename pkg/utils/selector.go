@@ -112,23 +112,33 @@ func SelectAndFilterPods(ctx context.Context, c client.Client, r client.Reader, 
 // TODO if PC are specifically specified by `selector.PersistentVolumes`, it just returns the selector.PersistentVolumes
 func SelectPersistentVolumes(ctx context.Context, c client.Client, r client.Reader, selector v1alpha1.SelectorSpec) ([]v1.PersistentVolume, error) {
 
-	if !common.ControllerCfg.ClusterScoped {
-		if len(selector.Namespaces) > 1 {
-			return nil, fmt.Errorf("could NOT use more than 1 namespace selector within namespace scoped mode")
-		} else if len(selector.Namespaces) == 1 {
-			if selector.Namespaces[0] != common.ControllerCfg.TargetNamespace {
-				return nil, fmt.Errorf("could NOT list pods from out of scoped namespace: %s", selector.Namespaces[0])
+	var pvs []v1.PersistentVolume
+	// persistent volumes are specifically specified
+	if len(selector.PersistentVolumes) > 0 {
+		for _, name := range selector.PersistentVolumes {
+			var pv v1.PersistentVolume
+			err := c.Get(ctx, types.NamespacedName{
+				Namespace: "",
+				Name:      name,
+			}, &pv)
+			if err == nil {
+				pvs = append(pvs, pv)
+				continue
 			}
-		}
-	}
 
-	// TODO at the moment we support only filtering by label for PV
+			if apierrors.IsNotFound(err) {
+				log.Error(err, "Pv is not found", "pv name", name)
+				continue
+			}
+
+			return nil, err
+		}
+
+		return pvs, nil
+	}
 	var pvList v1.PersistentVolumeList
 
 	var listOptions = client.ListOptions{}
-	if !common.ControllerCfg.ClusterScoped {
-		listOptions.Namespace = common.ControllerCfg.TargetNamespace
-	}
 	if len(selector.LabelSelectors) > 0 {
 		listOptions.LabelSelector = labels.SelectorFromSet(selector.LabelSelectors)
 

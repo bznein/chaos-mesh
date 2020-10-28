@@ -1530,6 +1530,11 @@ func (in *SelectorSpec) DeepCopyInto(out *SelectorSpec) {
 			(*out)[key] = outVal
 		}
 	}
+	if in.PersistentVolumes != nil {
+		in, out := &in.PersistentVolumes, &out.PersistentVolumes
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.NodeSelectors != nil {
 		in, out := &in.NodeSelectors, &out.NodeSelectors
 		*out = make(map[string]string, len(*in))

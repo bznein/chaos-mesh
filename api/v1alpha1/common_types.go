@@ -43,6 +43,10 @@ type SelectorSpec struct {
 	// +optional
 	Pods map[string][]string `json:"pods,omitempty"`
 
+	// PersistentVolumes is an array of names that is used to select pvs.
+	// +optional
+	PersistentVolumes []string `json:"persistent_volumes,omitempty"`
+
 	// Map of string keys and values that can be used to select nodes.
 	// Selector which must match a node's labels,
 	// and objects must belong to these selected nodes.

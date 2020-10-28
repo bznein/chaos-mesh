@@ -114,6 +114,12 @@ spec:
                   items:
                     type: string
                   type: array
+                persistent_volumes:
+                  description: PersistentVolumes is an array of names that is used
+                    to select pvs.
+                  items:
+                    type: string
+                  type: array
                 podPhaseSelectors:
                   description: 'PodPhaseSelectors is a set of condition of a pod at
                     the current time. supported value: Pending / Running / Succeeded
