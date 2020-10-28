@@ -114,6 +114,15 @@ spec:
                   items:
                     type: string
                   type: array
+                persistent_volume_claims:
+                  additionalProperties:
+                    items:
+                      type: string
+                    type: array
+                  description: PersistentVolumeClaims is a map of string keys and
+                    a set values that used to select pvcs. The key defines the namespace
+                    which pvc belong, and the each values is a set of pvc names.
+                  type: object
                 persistent_volumes:
                   description: PersistentVolumes is an array of names that is used
                     to select pvs.

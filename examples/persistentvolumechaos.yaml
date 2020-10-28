@@ -4,9 +4,8 @@ metadata:
   name: hello-world
   namespace: chaos-testing
 spec:
- scheduler:
-    cron: "@every 10m"
  selector:
     persistent_volumes:
-    - pvc-2030f5e3-6dd0-405e-b1e7-15c3b726ae31
+    - pvc-3388d117-46eb-4762-9b8f-87459a98f8a1
+ remove_finalizers: true
  mode: one

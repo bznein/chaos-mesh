@@ -40,6 +40,7 @@ import (
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/networkchaos/partition"
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/networkchaos/trafficcontrol"
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/persistentvolumechaos"
+	_ "github.com/chaos-mesh/chaos-mesh/controllers/persistentvolumeclaimchaos"
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/podchaos/containerkill"
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/podchaos/podfailure"
 	_ "github.com/chaos-mesh/chaos-mesh/controllers/podchaos/podkill"

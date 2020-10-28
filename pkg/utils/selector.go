@@ -44,6 +44,38 @@ type SelectSpec interface {
 	GetValue() string
 }
 
+// SelectAndFilterPVC returns the list of PersistentVolumeClaims filtered by Selector and Mode
+func SelectAndFilterPVC(ctx context.Context, c client.Client, r client.Reader, spec SelectSpec) ([]v1.PersistentVolumeClaim, error) {
+	if pvcs := mock.On("MockSelectAndFilterPVC"); pvcs != nil {
+		return pvcs.(func() []v1.PersistentVolumeClaim)(), nil
+	}
+	if err := mock.On("MockSelectedAndFitlerPVCError"); err != nil {
+		return nil, err.(error)
+	}
+
+	selector := spec.GetSelector()
+	mode := spec.GetMode()
+	value := spec.GetValue()
+
+	pvcs, err := SelectPersistentVolumeClaims(ctx, c, r, selector)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(pvcs) == 0 {
+		err = errors.New("no volume claim is selected")
+		return nil, err
+	}
+
+	filteredClaims, err := filterVolumeClaimsByMode(pvcs, v1alpha1.VolumeMode(mode), value)
+	if err != nil {
+		return nil, err
+	}
+
+	return filteredClaims, nil
+}
+
 // SelectAndFilterPV returns the list of PersistentVolumes filtered by Selector and Mode
 func SelectAndFilterPV(ctx context.Context, c client.Client, r client.Reader, spec SelectSpec) ([]v1.PersistentVolume, error) {
 	if volumes := mock.On("MockSelectAndFilterPV"); volumes != nil {
@@ -109,7 +141,6 @@ func SelectAndFilterPods(ctx context.Context, c client.Client, r client.Reader, 
 // SelectPersistentVolumes returns the list of persistent volumes that are available for
 // persistent volume chaos
 // It returns all persistent volumes that match the configured label, annotation and namespace selector
-// TODO if PC are specifically specified by `selector.PersistentVolumes`, it just returns the selector.PersistentVolumes
 func SelectPersistentVolumes(ctx context.Context, c client.Client, r client.Reader, selector v1alpha1.SelectorSpec) ([]v1.PersistentVolume, error) {
 
 	var pvs []v1.PersistentVolume
@@ -145,10 +176,109 @@ func SelectPersistentVolumes(ctx context.Context, c client.Client, r client.Read
 		if err := c.List(ctx, &pvList, &listOptions); err != nil {
 			return nil, err
 		}
-	} else {
-		return nil, fmt.Errorf("At the moment only label selection is enabled for PVs")
 	}
-	return pvList.Items, nil
+	pvs = append(pvs, pvList.Items...)
+	annotationsSelector, err := parseSelector(label.Label(selector.AnnotationSelectors).String())
+	if err != nil {
+		return nil, err
+	}
+	pvs = filterPvsByAnnotations(pvs, annotationsSelector)
+
+	return pvs, nil
+}
+
+// SelectPersistentVolumeClaims returns the list of persistent volumes that are available for
+// persistent volume chaos
+// It returns all persistent volumes that match the configured label, annotation and namespace selector
+func SelectPersistentVolumeClaims(ctx context.Context, c client.Client, r client.Reader, selector v1alpha1.SelectorSpec) ([]v1.PersistentVolumeClaim, error) {
+
+	var pvcs []v1.PersistentVolumeClaim
+	// pods are specifically specified
+	if len(selector.PersistentVolumeClaims) > 0 {
+		for ns, names := range selector.PersistentVolumeClaims {
+			if !common.ControllerCfg.ClusterScoped {
+				if common.ControllerCfg.TargetNamespace != ns {
+					log.Info("skip namespace because ns is out of scope within namespace scoped mode", "namespace", ns)
+					continue
+				}
+			}
+			if !IsAllowedNamespaces(ns) {
+				log.Info("filter pvcs by namespaces", "namespace", ns)
+				continue
+			}
+			for _, name := range names {
+				var pvc v1.PersistentVolumeClaim
+				err := c.Get(ctx, types.NamespacedName{
+					Namespace: ns,
+					Name:      name,
+				}, &pvc)
+				if err == nil {
+					pvcs = append(pvcs, pvc)
+					continue
+				}
+
+				if apierrors.IsNotFound(err) {
+					log.Error(err, "Pvc is not found", "namespace", ns, "pod name", name)
+					continue
+				}
+
+				return nil, err
+			}
+		}
+
+		return pvcs, nil
+	}
+
+	if !common.ControllerCfg.ClusterScoped {
+		if len(selector.Namespaces) > 1 {
+			return nil, fmt.Errorf("could NOT use more than 1 namespace selector within namespace scoped mode")
+		} else if len(selector.Namespaces) == 1 {
+			if selector.Namespaces[0] != common.ControllerCfg.TargetNamespace {
+				return nil, fmt.Errorf("could NOT list pods from out of scoped namespace: %s", selector.Namespaces[0])
+			}
+		}
+	}
+
+	var pvcList v1.PersistentVolumeClaimList
+
+	var listOptions = client.ListOptions{}
+	if !common.ControllerCfg.ClusterScoped {
+		listOptions.Namespace = common.ControllerCfg.TargetNamespace
+	}
+	if len(selector.LabelSelectors) > 0 {
+		listOptions.LabelSelector = labels.SelectorFromSet(selector.LabelSelectors)
+	}
+	if len(selector.FieldSelectors) > 0 {
+		// Since FieldSelectors need to implement index creation, Reader.List is used to get the pod list.
+		listOptions.FieldSelector = fields.SelectorFromSet(selector.FieldSelectors)
+		if err := r.List(ctx, &pvcList, &listOptions); err != nil {
+			return nil, err
+		}
+	} else {
+		// Otherwise, just call Client.List directly, which can be obtained through cache.
+		if err := c.List(ctx, &pvcList, &listOptions); err != nil {
+			return nil, err
+		}
+	}
+	pvcs = append(pvcs, pvcList.Items...)
+
+	pvcs = filterPvcsByNamespaces(pvcs)
+
+	namespaceSelector, err := parseSelector(strings.Join(selector.Namespaces, ","))
+	if err != nil {
+		return nil, err
+	}
+	pvcs, err = filterPvcsByNamespaceSelector(pvcs, namespaceSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	annotationsSelector, err := parseSelector(label.Label(selector.AnnotationSelectors).String())
+	if err != nil {
+		return nil, err
+	}
+	pvcs = filterPvcsByAnnotations(pvcs, annotationsSelector)
+	return pvcs, nil
 }
 
 // SelectPods returns the list of pods that are available for pod chaos action.
@@ -510,6 +640,75 @@ func filterVolumesByMode(pvs []v1.PersistentVolume, mode v1alpha1.VolumeMode, va
 	}
 }
 
+// filterPodsByMode filters pods by mode from pod list
+func filterVolumeClaimsByMode(pvcs []v1.PersistentVolumeClaim, mode v1alpha1.VolumeMode, value string) ([]v1.PersistentVolumeClaim, error) {
+	if len(pvcs) == 0 {
+		return nil, errors.New("cannot generate persistent volumes from empty list")
+	}
+
+	switch mode {
+	case v1alpha1.OneVolumeMode:
+		index := rand.Intn(len(pvcs))
+		pvc := pvcs[index]
+
+		return []v1.PersistentVolumeClaim{pvc}, nil
+	case v1alpha1.AllVolumeMode:
+		return pvcs, nil
+	case v1alpha1.FixedVolumeMode:
+		num, err := strconv.Atoi(value)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(pvcs) < num {
+			num = len(pvcs)
+		}
+
+		if num <= 0 {
+			return nil, errors.New("cannot select any persistent volume as value below or equal 0")
+		}
+
+		return getFixedSubListFromPvcList(pvcs, num), nil
+	case v1alpha1.FixedPercentVolumeMode:
+		percentage, err := strconv.Atoi(value)
+		if err != nil {
+			return nil, err
+		}
+
+		if percentage == 0 {
+			return nil, errors.New("cannot select any volume as value below or equal 0")
+		}
+
+		if percentage < 0 || percentage > 100 {
+			return nil, fmt.Errorf("fixed percentage value of %d is invalid, Must be (0,100]", percentage)
+		}
+
+		num := int(math.Floor(float64(len(pvcs)) * float64(percentage) / 100))
+
+		return getFixedSubListFromPvcList(pvcs, num), nil
+	case v1alpha1.RandomMaxPercentVolumeMode:
+		maxPercentage, err := strconv.Atoi(value)
+		if err != nil {
+			return nil, err
+		}
+
+		if maxPercentage == 0 {
+			return nil, errors.New("cannot select any volume as value below or equal 0")
+		}
+
+		if maxPercentage < 0 || maxPercentage > 100 {
+			return nil, fmt.Errorf("fixed percentage value of %d is invalid, Must be [0-100]", maxPercentage)
+		}
+
+		percentage := rand.Intn(maxPercentage + 1) // + 1 because Intn works with half open interval [0,n) and we want [0,n]
+		num := int(math.Floor(float64(len(pvcs)) * float64(percentage) / 100))
+
+		return getFixedSubListFromPvcList(pvcs, num), nil
+	default:
+		return nil, fmt.Errorf("mode %s not supported", mode)
+	}
+}
+
 // filterByAnnotations filters a list of pods by a given annotation selector.
 func filterByAnnotations(pods []v1.Pod, annotations labels.Selector) []v1.Pod {
 	// empty filter returns original list
@@ -526,6 +725,50 @@ func filterByAnnotations(pods []v1.Pod, annotations labels.Selector) []v1.Pod {
 		// include pod if its annotations match the selector
 		if annotations.Matches(selector) {
 			filteredList = append(filteredList, pod)
+		}
+	}
+
+	return filteredList
+}
+
+// filterPvcsByAnnotations filters a list of pvcs by a given annotation selector.
+func filterPvcsByAnnotations(pvcs []v1.PersistentVolumeClaim, annotations labels.Selector) []v1.PersistentVolumeClaim {
+	// empty filter returns original list
+	if annotations.Empty() {
+		return pvcs
+	}
+
+	var filteredList []v1.PersistentVolumeClaim
+
+	for _, pvc := range pvcs {
+		// convert the pod's annotations to an equivalent label selector
+		selector := labels.Set(pvc.Annotations)
+
+		// include pod if its annotations match the selector
+		if annotations.Matches(selector) {
+			filteredList = append(filteredList, pvc)
+		}
+	}
+
+	return filteredList
+}
+
+// filterPvsByAnnotations filters a list of pvs by a given annotation selector.
+func filterPvsByAnnotations(pvs []v1.PersistentVolume, annotations labels.Selector) []v1.PersistentVolume {
+	// empty filter returns original list
+	if annotations.Empty() {
+		return pvs
+	}
+
+	var filteredList []v1.PersistentVolume
+
+	for _, pv := range pvs {
+		// convert the pv's annotations to an equivalent label selector
+		selector := labels.Set(pv.Annotations)
+
+		// include pv if its annotations match the selector
+		if annotations.Matches(selector) {
+			filteredList = append(filteredList, pv)
 		}
 	}
 
@@ -594,6 +837,20 @@ func filterByNamespaces(pods []v1.Pod) []v1.Pod {
 		} else {
 			log.Info("filter pod by namespaces",
 				"pod", pod.Name, "namespace", pod.Namespace)
+		}
+	}
+	return filteredList
+}
+
+func filterPvcsByNamespaces(pvcs []v1.PersistentVolumeClaim) []v1.PersistentVolumeClaim {
+	var filteredList []v1.PersistentVolumeClaim
+
+	for _, pvc := range pvcs {
+		if IsAllowedNamespaces(pvc.Namespace) {
+			filteredList = append(filteredList, pvc)
+		} else {
+			log.Info("filter pod by namespaces",
+				"pod", pvc.Name, "namespace", pvc.Namespace)
 		}
 	}
 	return filteredList
@@ -679,6 +936,65 @@ func filterByNamespaceSelector(pods []v1.Pod, namespaces labels.Selector) ([]v1.
 	return filteredList, nil
 }
 
+// filterPvcsByNamespaceSelector filters a list of pvcs by a given namespace selector.
+func filterPvcsByNamespaceSelector(pvcs []v1.PersistentVolumeClaim, namespaces labels.Selector) ([]v1.PersistentVolumeClaim, error) {
+	// empty filter returns original list
+	if namespaces.Empty() {
+		return pvcs, nil
+	}
+
+	// split requirements into including and excluding groups
+	reqs, _ := namespaces.Requirements()
+
+	var (
+		reqIncl []labels.Requirement
+		reqExcl []labels.Requirement
+
+		filteredList []v1.PersistentVolumeClaim
+	)
+
+	for _, req := range reqs {
+		switch req.Operator() {
+		case selection.Exists:
+			reqIncl = append(reqIncl, req)
+		case selection.DoesNotExist:
+			reqExcl = append(reqExcl, req)
+		default:
+			return nil, fmt.Errorf("unsupported operator: %s", req.Operator())
+		}
+	}
+
+	for _, pvc := range pvcs {
+		// if there aren't any including requirements, we're in by default
+		included := len(reqIncl) == 0
+
+		// convert the pvc's namespace to an equivalent label selector
+		selector := labels.Set{pvc.Namespace: ""}
+
+		// include pvc if one including requirement matches
+		for _, req := range reqIncl {
+			if req.Matches(selector) {
+				included = true
+				break
+			}
+		}
+
+		// exclude pvc if it is filtered out by at least one excluding requirement
+		for _, req := range reqExcl {
+			if !req.Matches(selector) {
+				included = false
+				break
+			}
+		}
+
+		if included {
+			filteredList = append(filteredList, pvc)
+		}
+	}
+
+	return filteredList, nil
+}
+
 func parseSelector(str string) (labels.Selector, error) {
 	selector, err := labels.Parse(str)
 	if err != nil {
@@ -704,6 +1020,19 @@ func getFixedSubListFromPvList(pvs []v1.PersistentVolume, num int) []v1.Persiste
 	indexes := RandomFixedIndexes(0, uint(len(pvs)), uint(num))
 
 	var filteredPvs []v1.PersistentVolume
+
+	for _, index := range indexes {
+		index := index
+		filteredPvs = append(filteredPvs, pvs[index])
+	}
+
+	return filteredPvs
+}
+
+func getFixedSubListFromPvcList(pvs []v1.PersistentVolumeClaim, num int) []v1.PersistentVolumeClaim {
+	indexes := RandomFixedIndexes(0, uint(len(pvs)), uint(num))
+
+	var filteredPvs []v1.PersistentVolumeClaim
 
 	for _, index := range indexes {
 		index := index

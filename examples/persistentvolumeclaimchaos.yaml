@@ -1,0 +1,11 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PersistentVolumeClaimChaos
+metadata:
+  name: hello-world
+  namespace: chaos-testing
+spec:
+  selector:
+    labelSelectors:
+      "app" : "example-scram-mongodb-svc"
+  remove_finalizers: true
+  mode: one

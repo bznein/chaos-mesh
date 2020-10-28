@@ -7,19 +7,22 @@ import (
 // +kubebuilder:object:root=true
 // +chaos-mesh:base
 
-// PersistentVolumeChaos is the Schema for the persistentvolumechaos API
-type PersistentVolumeChaos struct {
+// PersistentVolumeClaimChaos is the Schema for the persistentvolumeclaimchaos API
+type PersistentVolumeClaimChaos struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PersistentVolumeChaosSpec   `json:"spec"`
-	Status PersistentVolumeChaosStatus `json:"status,omitempty"`
+	Spec   PersistentVolumeClaimChaosSpec   `json:"spec"`
+	Status PersistentVolumeClaimChaosStatus `json:"status,omitempty"`
 }
 
-// PersistentVolumeChaosSpec is the content of the specification for a PersistentVolumeChaos
-type PersistentVolumeChaosSpec struct {
+// PersistentVolumeClaimChaosSpec is the content of the specification for a PersistentVolumeClaimChaos
+type PersistentVolumeClaimChaosSpec struct {
 	// Selector is used to select pods that are used to inject chaos action.
 	Selector SelectorSpec `json:"selector"`
+	// Scheduler defines some schedule rules to control the running time of the chaos experiment about time.
+	// +optional
+	Scheduler *SchedulerSpec `json:"scheduler,omitempty"`
 
 	// Duration represents the duration of the chaos action
 	// +optional
@@ -36,28 +39,24 @@ type PersistentVolumeChaosSpec struct {
 	// +optional
 	Value string `json:"value"`
 
-	// Scheduler defines some schedule rules to control the running time of the chaos experiment about time.
-	// +optional
-	Scheduler *SchedulerSpec `json:"scheduler,omitempty"`
-
 	// Remove finalizers tell the chaos whether to patch the PV deleted and remove its finalizers
 	// +optional
 	RemoveFinalizers bool `json:"remove_finalizers"`
 }
 
-// PersistentVolumeChaosStatus represents the status of a PersistentVolumeChaos
-type PersistentVolumeChaosStatus struct {
+// PersistentVolumeClaimChaosStatus represents the status of a PersistentVolumeClaimChaos
+type PersistentVolumeClaimChaosStatus struct {
 	ChaosStatus `json:",inline"`
 }
 
-func (in *PersistentVolumeChaosSpec) GetSelector() SelectorSpec {
+func (in *PersistentVolumeClaimChaosSpec) GetSelector() SelectorSpec {
 	return in.Selector
 }
 
-func (in *PersistentVolumeChaosSpec) GetMode() PodMode {
+func (in *PersistentVolumeClaimChaosSpec) GetMode() PodMode {
 	return in.Mode
 }
 
-func (in *PersistentVolumeChaosSpec) GetValue() string {
+func (in *PersistentVolumeClaimChaosSpec) GetValue() string {
 	return in.Value
 }

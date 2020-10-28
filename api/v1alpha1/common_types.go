@@ -43,6 +43,12 @@ type SelectorSpec struct {
 	// +optional
 	Pods map[string][]string `json:"pods,omitempty"`
 
+	// PersistentVolumeClaims is a map of string keys and a set values that used to select pvcs.
+	// The key defines the namespace which pvc belong,
+	// and the each values is a set of pvc names.
+	// +optional
+	PersistentVolumeClaims map[string][]string `json:"persistent_volume_claims,omitempty"`
+
 	// PersistentVolumes is an array of names that is used to select pvs.
 	// +optional
 	PersistentVolumes []string `json:"persistent_volumes,omitempty"`
