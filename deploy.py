@@ -5,6 +5,7 @@ import subprocess
 import time
 from typing import Callable, Tuple, List, Optional, Any
 import os
+from kubernetes import config
 
 
 
@@ -13,8 +14,15 @@ def uninstall_release():
     subprocess.run(["helm", "uninstall", "--namespace=chaos-testing", "chaos-mesh"])
 
 def install_release():
+    args=["helm", "install", "chaos-mesh", "helm/chaos-mesh", "--namespace=chaos-testing"]
+    print("Ensuring namespace")
+    ensure_namespace()
+    print("Current context check..")
+    if "kind" in (config.list_kube_config_contexts()[1]["name"]):
+        print("Current context is kind")
+        args.append(["--set", "chaosDaemon.runtime=containerd", "--set", "chaosDaemon.socketPath=/run/containerd/containerd.sock"])
+
     print("Installing release:")
-    args=["helm", "install", "chaos-mesh", "helm/chaos-mesh", "--namespace=chaos-testing", "--set", "chaosDaemon.runtime=containerd", "--set", "chaosDaemon.socketPath=/run/containerd/containerd.sock"]
     ui = os.environ.get("UI", "0")
     if ui == "1":
         args.append(["--set", "dashboard.create=true"])
@@ -41,6 +49,10 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def ensure_namespace(ns : str = "chaos-testing"):
+    args=["kubectl", "create", "ns", ns]
+    subprocess.run(args)
+
 # TODO ignore output here (optional)
 def make(argument: Optional[str] = None):
     args = ["make"]
@@ -60,7 +72,7 @@ def make(argument: Optional[str] = None):
 def main() -> int:
     args = parse_args()
 
-    print(f"args: {args}")
+    print(f"Deploy script launched with following arguments: {args}")
     threadHelmUninstall = threading.Thread(target=uninstall_release, args=(), kwargs={})
     threadHelmUninstall.start()
 
